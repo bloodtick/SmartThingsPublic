@@ -12,15 +12,14 @@
  *
  */
 metadata {
-	definition (name: "Motion Detector", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "Motion Detector", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", vid: "generic-motion-9") {
 		capability "Actuator"
-		capability "Configuration"
 		capability "Health Check"
 		capability "Motion Sensor"
 		capability "Sensor"
 
-		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0001,0003,0009,0500"
-		fingerprint manufacturer: "Aurora", model: "MotionSensor51AU", deviceJoinName: "Aurora Smart PIR Sensor" //raw description 22 0104 0107 00 03 0000 0003 0406 00
+		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0001,0003,0009,0500", deviceJoinName: "Motion Sensor"
+		fingerprint manufacturer: "Aurora", model: "MotionSensor51AU", deviceJoinName: "Aurora Motion Sensor" //raw description 22 0104 0107 00 03 0000 0003 0406 00 //Aurora Smart PIR Sensor
 	}
 
 	// simulator metadata
@@ -44,6 +43,11 @@ metadata {
 
 def installed() {
 	initialize()
+	if(isAuroraMotionSensor51AU()) {
+		// Aurora Smart PIR Sensor doesn't report when there is no motion during pairing process
+		// reports are sent only if there is motion detected, so fake event is needed here
+		sendEvent(name: "motion", value: "inactive", displayed: false)
+	}
 }
 
 def updated() {
@@ -85,11 +89,9 @@ def parse(String description) {
 }
 
 def isTracked() {
-	return device.getDataValue("model") == "MotionSensor51AU"
+	return isAuroraMotionSensor51AU()
 }
 
-def configure() {
-	log.debug "configure"
-	return	zigbee.configureReporting(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS, 0x19, 0, 180, null) +
-			zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS)
+def isAuroraMotionSensor51AU() {
+	return device.getDataValue("model") == "MotionSensor51AU"
 }
